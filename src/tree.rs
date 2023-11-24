@@ -1,8 +1,10 @@
 use serde::Deserialize;
 
+pub mod cursor;
+
 #[derive(Deserialize, Debug, PartialEq, Eq, Copy, Clone, Default)]
 #[serde(rename_all = "snake_case")]
-pub enum SwayNodeType {
+pub enum NodeType {
     #[default]
     Root,
     Output,
@@ -12,15 +14,15 @@ pub enum SwayNodeType {
 }
 
 #[test]
-fn test_sway_node_type_deserialize() {
+fn test_node_type_deserialize() {
     let json = r#"[ "root" , "output" , "workspace" , "con" , "floating_con" ]"#;
 
     let expected = {
-        use SwayNodeType::*;
+        use NodeType::*;
         [Root, Output, Workspace, Con, FloatingCon]
     };
 
-    let parsed: Vec<SwayNodeType> = serde_json::from_str(json).unwrap();
+    let parsed: Vec<NodeType> = serde_json::from_str(json).unwrap();
 
     assert_eq!(parsed.as_ref(), expected);
 }
@@ -187,11 +189,11 @@ pub struct InhibitorState {
 
 #[derive(Deserialize, Debug, PartialEq, Clone, Default)]
 #[allow(dead_code)]
-pub struct SwayTreeNode {
+pub struct TreeNode {
     pub id: i32,
     pub name: Option<String>,
     #[serde(rename = "type")]
-    pub node_type: SwayNodeType,
+    pub node_type: NodeType,
     pub current_border_width: i32,
     pub layout: Layout,
     pub orientation: Orientation,
@@ -205,8 +207,8 @@ pub struct SwayTreeNode {
     pub marks: Vec<String>,
     pub focused: bool,
     pub focus: Vec<i32>,
-    pub nodes: Vec<SwayTreeNode>,
-    pub floating_nodes: Vec<SwayTreeNode>,
+    pub nodes: Vec<TreeNode>,
+    pub floating_nodes: Vec<TreeNode>,
     pub representation: Option<String>,
     pub fullscreen_mode: FullScreenMode,
     pub app_id: Option<String>,
@@ -218,10 +220,10 @@ pub struct SwayTreeNode {
 }
 
 #[test]
-fn test_sway_tree_node_deserialize() {
-    let example = include_str!("types/sway-tree.json");
+fn test_tree_node_deserialize() {
+    let example = include_str!("tree/sway-tree.json");
 
-    let parsed: Result<SwayTreeNode, serde_json::Error> = serde_json::from_str(example);
+    let parsed: Result<TreeNode, serde_json::Error> = serde_json::from_str(example);
 
     match parsed {
         Ok(_) => (),

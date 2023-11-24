@@ -1,6 +1,6 @@
 use std::os::unix::net::UnixStream;
 
-use crate::types::{CommandResult, SwayTreeNode};
+use crate::tree::{CommandResult, TreeNode};
 use anyhow::{Context, Result};
 use serde::de::DeserializeOwned;
 use std::io::Read;
@@ -84,7 +84,7 @@ fn message<T: DeserializeOwned>(
     Ok(receive_message(sock, message_type)?)
 }
 
-pub fn get_tree(sock: &mut UnixStream) -> Result<SwayTreeNode> {
+pub fn get_tree(sock: &mut UnixStream) -> Result<TreeNode> {
     Ok(message(sock, MessageType::GetTree, &[])?)
 }
 

@@ -1,21 +1,22 @@
-use std::default::Default;
+use core::slice;
+use std::{default::Default, iter::Rev};
 
-use crate::types::SwayTreeNode;
+use crate::tree::TreeNode;
 
-pub fn find_focused<'a>(root: &'a SwayTreeNode) -> Option<Cursor<'a>> {
+pub fn find_focused<'a>(root: &'a TreeNode) -> Option<Cursor<'a>> {
     CursorIterator::new(Cursor::new(&root)).find(|c| c.focus.focused)
 }
 
 #[derive(Debug, Clone)]
 pub struct Cursor<'a> {
     parent_stack: Vec<Cursor<'a>>,
-    pub focus: &'a SwayTreeNode,
+    pub focus: &'a TreeNode,
     focus_idx: usize,
 }
 
 impl<'a> Cursor<'a> {
     #[allow(dead_code)]
-    pub fn new(focus: &'a SwayTreeNode) -> Cursor<'a> {
+    pub fn new(focus: &'a TreeNode) -> Cursor<'a> {
         Cursor {
             focus,
             parent_stack: Default::default(),
@@ -30,6 +31,10 @@ impl<'a> Cursor<'a> {
                 Result::Ok(c) => c,
             }
         }
+    }
+
+    pub fn ancestors(&self) -> Rev<slice::Iter<Self>> {
+        self.parent_stack.iter().rev()
     }
 
     pub fn descend(mut self: Self) -> Result<Self, Self> {
@@ -115,24 +120,24 @@ impl<'a> std::iter::Iterator for CursorIterator<'a> {
 mod tests {
     use super::*;
 
-    fn build_tree() -> SwayTreeNode {
-        SwayTreeNode {
+    fn build_tree() -> TreeNode {
+        TreeNode {
             name: Some("a".to_string()),
-            nodes: vec![SwayTreeNode {
+            nodes: vec![TreeNode {
                 name: Some("b".to_string()),
 
                 nodes: vec![
-                    SwayTreeNode {
+                    TreeNode {
                         name: Some("c".to_string()),
                         ..Default::default()
                     },
-                    SwayTreeNode {
+                    TreeNode {
                         name: Some("d".to_string()),
 
-                        nodes: vec![SwayTreeNode {
+                        nodes: vec![TreeNode {
                             name: Some("e".to_string()),
 
-                            nodes: vec![SwayTreeNode {
+                            nodes: vec![TreeNode {
                                 name: Some("f".to_string()),
                                 focused: true,
                                 ..Default::default()
@@ -141,10 +146,10 @@ mod tests {
                         }],
                         ..Default::default()
                     },
-                    SwayTreeNode {
+                    TreeNode {
                         name: Some("g".to_string()),
 
-                        nodes: vec![SwayTreeNode {
+                        nodes: vec![TreeNode {
                             name: Some("h".to_string()),
                             ..Default::default()
                         }],
