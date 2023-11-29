@@ -219,6 +219,14 @@ pub struct TreeNode {
     pub idle_inhibitors: Option<InhibitorState>,
 }
 
+impl<'a> IntoIterator for &'a TreeNode {
+    type Item = cursor::Cursor<'a>;
+    type IntoIter = cursor::CursorIterator<'a>;
+    fn into_iter(self) -> Self::IntoIter {
+        cursor::Cursor::new(self).iter()
+    }
+}
+
 #[test]
 fn test_tree_node_deserialize() {
     let example = include_str!("tree/sway-tree.json");
