@@ -1,10 +1,10 @@
 use std::os::unix::net::UnixStream;
-use sway_nav::messages::{get_tree, run_command};
+use haswaynav::messages::{get_tree, run_command};
 
 use anyhow::Result;
 use clap::Parser;
-use sway_nav::tree::cursor::find_focused;
-use sway_nav::tree::Layout;
+use haswaynav::tree::cursor::find_focused;
+use haswaynav::tree::Layout;
 
 #[derive(Debug, Parser)]
 #[clap(long_about= None)]

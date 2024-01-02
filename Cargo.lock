@@ -163,6 +163,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fb8d784f27acf97159b40fc4db5ecd8aa23b9ad5ef69cdd136d3bc80665f0c0"
 
 [[package]]
+name = "haswaynav"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "either",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "heck"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -270,17 +281,6 @@ name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
-
-[[package]]
-name = "sway-nav"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "either",
- "serde",
- "serde_json",
-]
 
 [[package]]
 name = "syn"
