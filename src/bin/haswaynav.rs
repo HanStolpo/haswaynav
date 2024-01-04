@@ -1,5 +1,5 @@
-use std::os::unix::net::UnixStream;
 use haswaynav::messages::{get_tree, run_command};
+use std::os::unix::net::UnixStream;
 
 use anyhow::Result;
 use clap::Parser;
@@ -29,7 +29,22 @@ enum Direction {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let mut socket = UnixStream::connect("/run/user/1000/sway-ipc.1000.2653.sock")?;
+    let swayswock = {
+        let errmsg = || {
+            anyhow::format_err!("Environment variable 'SWAYSOCK' which specifies the path to the sway socket is not defined")
+        };
+        std::env::var("SWAYSOCK")
+            .map_err(|_| errmsg())
+            .and_then(|s| if s.is_empty() { Err(errmsg()) } else { Ok(s) })?
+    };
+
+    let mut socket = UnixStream::connect(swayswock.clone()).map_err(|err| {
+        anyhow::format_err!(
+            "Failed opening socket '{}' specified by SWAYSOCK environment variable: {}",
+            swayswock,
+            err
+        )
+    })?;
 
     match args {
         Args::Focus(FocusArgs { direction }) => change_focus(&mut socket, direction)?,
