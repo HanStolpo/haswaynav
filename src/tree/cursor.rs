@@ -5,7 +5,7 @@ use std::{default::Default, rc::Rc};
 use crate::tree::TreeNode;
 
 /// Find the currently focused node in the sway tree layout.
-pub fn find_focused<'a>(root: &'a TreeNode) -> Option<Cursor<'a>> {
+pub fn find_focused(root: &TreeNode) -> Option<Cursor> {
     root.into_iter().find(|c| c.node.focused)
 }
 
@@ -57,20 +57,15 @@ impl<'a> Cursor<'a> {
     pub fn ancestors(&self) -> Vec<Self> {
         let mut vec: Vec<Self> = Default::default();
         let mut next = &self.parent;
-        loop {
-            match &next {
-                Some(parent) => {
-                    vec.push(parent.as_ref().clone());
-                    next = &parent.parent;
-                }
-                None => break,
-            };
+        while let Some(parent) = &next {
+            vec.push(parent.as_ref().clone());
+            next = &parent.parent;
         }
         vec
     }
 
     /// Descend into the first child node if possible or return self on failure.
-    pub fn descend(mut self: Self) -> Result<Self, Self> {
+    pub fn descend(mut self) -> Result<Self, Self> {
         match self.deref_child(0) {
             None => Err(self),
             Some(child) => {
@@ -96,7 +91,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// Navigate to the previous sibling if there is one or return self on failure.
-    pub fn prev_sibling(mut self: Self) -> Result<Self, Self> {
+    pub fn prev_sibling(mut self) -> Result<Self, Self> {
         let parent = match &self.parent {
             None => return Result::Err(self),
             Some(x) => x,
@@ -117,7 +112,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// Navigate to the next sibling if there is one or return self on failure.
-    pub fn next_sibling(mut self: Self) -> Result<Self, Self> {
+    pub fn next_sibling(mut self) -> Result<Self, Self> {
         let parent = match &self.parent {
             None => return Result::Err(self),
             Some(x) => x,
@@ -134,7 +129,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// Navigate to the parent if there is one or return self on failure.
-    pub fn ascend(self: Self) -> Result<Self, Self> {
+    pub fn ascend(self) -> Result<Self, Self> {
         match &self.parent {
             None => Result::Err(self),
             Some(x) => Result::Ok(x.as_ref().clone()),

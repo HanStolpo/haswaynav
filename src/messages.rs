@@ -50,14 +50,14 @@ fn receive_message<T: DeserializeOwned>(
     }
 
     let payload_length = {
-        let mut payload_length_bytes = (0 as i32).to_ne_bytes();
+        let mut payload_length_bytes = 0_i32.to_ne_bytes();
         sock.read_exact(&mut payload_length_bytes)
             .context("reading payload length")?;
         i32::from_ne_bytes(payload_length_bytes)
     };
 
     let payload_type = {
-        let mut bytes = (0 as i32).to_ne_bytes();
+        let mut bytes = 0_i32.to_ne_bytes();
         sock.read_exact(&mut bytes).context("payload type")?;
         i32::from_ne_bytes(bytes)
     };
@@ -87,16 +87,16 @@ fn message<T: DeserializeOwned>(
     payload: &[u8],
 ) -> Result<T> {
     send_message(sock, message_type, payload)?;
-    Ok(receive_message(sock, message_type)?)
+    receive_message(sock, message_type)
 }
 
 /// Get the node layout tree by sending a `GET_TREE` message to sway over the IPC socket.
 pub fn get_tree(sock: &mut UnixStream) -> Result<TreeNode> {
-    Ok(message(sock, MessageType::GetTree, &[])?)
+    message(sock, MessageType::GetTree, &[])
 }
 
 /// Run the supplied string as sway commands by sending the `RUN_COMMAND` message to sway over the
 /// IPC socket.
 pub fn run_command(sock: &mut UnixStream, commands: &str) -> Result<Vec<CommandResult>> {
-    Ok(message(sock, MessageType::RunCommand, commands.as_bytes())?)
+    message(sock, MessageType::RunCommand, commands.as_bytes())
 }
