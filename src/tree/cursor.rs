@@ -1,24 +1,31 @@
-use core::slice;
-use std::{default::Default, iter::Rev};
+//! Utilities for easily traversing a sway layout tree keeping track of where one is in the tree.
+
+use std::{default::Default, rc::Rc};
 
 use crate::tree::TreeNode;
 
+/// Find the currently focused node in the sway tree layout.
 pub fn find_focused<'a>(root: &'a TreeNode) -> Option<Cursor<'a>> {
     root.into_iter().find(|c| c.node.focused)
 }
 
 #[derive(Debug, Clone)]
+/// A cursor into the sway tree layout which keeps track of where it is in the tree.
+///
+/// This also abstracts over floating and tiling children of nodes when navigating. Floating
+/// children appear after tiling children.
 pub struct Cursor<'a> {
-    parent_stack: Vec<Cursor<'a>>,
+    parent: Option<Rc<Cursor<'a>>>,
     node: &'a TreeNode,
     idx_in_parent: usize,
 }
 
 impl<'a> Cursor<'a> {
+    /// Create a new cursor given a root tree node.
     pub fn new(node: &'a TreeNode) -> Cursor<'a> {
         Cursor {
             node,
-            parent_stack: Default::default(),
+            parent: Default::default(),
             idx_in_parent: 0,
         }
     }
@@ -32,26 +39,42 @@ impl<'a> Cursor<'a> {
         }
     }
 
+    /// Get the node associated with the cursor
     pub fn get_node(&self) -> &'a TreeNode {
         self.node
     }
 
+    /// Is the node associated with the cursor a floating node
     pub fn is_floating(&self) -> bool {
-        match self.parent_stack.last() {
+        match &self.parent {
             None => false,
             Some(parent) => self.idx_in_parent >= parent.node.nodes.len(),
         }
     }
 
-    pub fn ancestors(&self) -> Rev<slice::Iter<Self>> {
-        self.parent_stack.iter().rev()
+    /// Get the ancestors from the current node under focus with the immediate parent being the
+    /// first element.
+    pub fn ancestors(&self) -> Vec<Self> {
+        let mut vec: Vec<Self> = Default::default();
+        let mut next = &self.parent;
+        loop {
+            match &next {
+                Some(parent) => {
+                    vec.push(parent.as_ref().clone());
+                    next = &parent.parent;
+                }
+                None => break,
+            };
+        }
+        vec
     }
 
+    /// Descend into the first child node if possible or return self on failure.
     pub fn descend(mut self: Self) -> Result<Self, Self> {
         match self.deref_child(0) {
             None => Err(self),
             Some(child) => {
-                self.parent_stack.push(self.clone());
+                self.parent = Some(Rc::new(self.clone()));
                 self.node = child;
                 self.idx_in_parent = 0;
                 Result::Ok(self)
@@ -72,8 +95,9 @@ impl<'a> Cursor<'a> {
         }
     }
 
+    /// Navigate to the previous sibling if there is one or return self on failure.
     pub fn prev_sibling(mut self: Self) -> Result<Self, Self> {
-        let parent = match self.parent_stack.last() {
+        let parent = match &self.parent {
             None => return Result::Err(self),
             Some(x) => x,
         };
@@ -92,8 +116,9 @@ impl<'a> Cursor<'a> {
         }
     }
 
+    /// Navigate to the next sibling if there is one or return self on failure.
     pub fn next_sibling(mut self: Self) -> Result<Self, Self> {
-        let parent = match self.parent_stack.last() {
+        let parent = match &self.parent {
             None => return Result::Err(self),
             Some(x) => x,
         };
@@ -108,13 +133,15 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    pub fn ascend(mut self: Self) -> Result<Self, Self> {
-        match self.parent_stack.pop() {
+    /// Navigate to the parent if there is one or return self on failure.
+    pub fn ascend(self: Self) -> Result<Self, Self> {
+        match &self.parent {
             None => Result::Err(self),
-            Some(x) => Result::Ok(x),
+            Some(x) => Result::Ok(x.as_ref().clone()),
         }
     }
 
+    /// Return an iterator over the tree iterating depth first left to right.
     pub fn iter(self) -> CursorIterator<'a> {
         CursorIterator::new(self)
     }
@@ -129,6 +156,7 @@ impl<'a> IntoIterator for Cursor<'a> {
 }
 
 #[derive(Debug)]
+/// A depth first left to right iterator over a sway tree hierarchy based on [Cursor]s.
 pub struct CursorIterator<'a>(Result<Cursor<'a>, Cursor<'a>>);
 
 impl<'a> CursorIterator<'a> {
@@ -297,6 +325,20 @@ mod tests {
                     .unwrap_or("".to_string())
             );
             assert_eq!(true, res.unwrap().is_floating());
+        }
+
+        #[test]
+        fn ancestors() {
+            let tree = build_tree();
+            let names = Cursor::new(&tree)
+                .into_iter()
+                .find(|c| c.node.name == Some("f".to_string()))
+                .unwrap()
+                .ancestors()
+                .into_iter()
+                .map(|c| c.node.name.clone().unwrap_or("".to_string()))
+                .collect::<Vec<String>>();
+            assert_eq!(names.join(""), "edba".to_string());
         }
     }
 

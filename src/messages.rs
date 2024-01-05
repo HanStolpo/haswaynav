@@ -1,3 +1,5 @@
+//! All the currently supported messages which can be sent to sway over its domain socket.
+
 use std::os::unix::net::UnixStream;
 
 use crate::tree::{CommandResult, TreeNode};
@@ -9,11 +11,13 @@ use std::io::Write;
 const MAGIC_BYTES: [u8; 6] = *(b"i3-ipc");
 
 #[derive(Copy, Clone)]
+/// The identifier for the sway message being sent via IPC
 enum MessageType {
     RunCommand = 0,
     GetTree = 4,
 }
 
+/// Send a message over the IPC socket to sway
 fn send_message(sock: &mut UnixStream, message_type: MessageType, payload: &[u8]) -> Result<()> {
     sock.write_all(&MAGIC_BYTES)?;
 
@@ -29,6 +33,7 @@ fn send_message(sock: &mut UnixStream, message_type: MessageType, payload: &[u8]
     Ok(())
 }
 
+/// Receive a response over the IPC socket from sway after sending a message
 fn receive_message<T: DeserializeOwned>(
     sock: &mut UnixStream,
     message_type: MessageType,
@@ -75,6 +80,7 @@ fn receive_message<T: DeserializeOwned>(
     Ok(payload)
 }
 
+/// Send a message to sway over the IPC socket and then receive its response to the message.
 fn message<T: DeserializeOwned>(
     sock: &mut UnixStream,
     message_type: MessageType,
@@ -84,10 +90,13 @@ fn message<T: DeserializeOwned>(
     Ok(receive_message(sock, message_type)?)
 }
 
+/// Get the node layout tree by sending a `GET_TREE` message to sway over the IPC socket.
 pub fn get_tree(sock: &mut UnixStream) -> Result<TreeNode> {
     Ok(message(sock, MessageType::GetTree, &[])?)
 }
 
+/// Run the supplied string as sway commands by sending the `RUN_COMMAND` message to sway over the
+/// IPC socket.
 pub fn run_command(sock: &mut UnixStream, commands: &str) -> Result<Vec<CommandResult>> {
     Ok(message(sock, MessageType::RunCommand, commands.as_bytes())?)
 }
