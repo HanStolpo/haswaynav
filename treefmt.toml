@@ -1,0 +1,11 @@
+[formatter.nix]
+command = "nixpkgs-fmt"
+options = []
+includes = ["*.nix"]
+excludes = [ ]
+
+[formatter.rust]
+command = "rustfmt"
+options = []
+includes = ["*.rs"]
+excludes = [ ]
