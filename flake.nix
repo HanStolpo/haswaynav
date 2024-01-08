@@ -19,7 +19,8 @@
           packages.default = naersk-lib.buildPackage ./.;
 
           apps.default = utils.lib.mkApp {
-            drv = self.defaultPackage."${system}";
+            drv = self.packages.${system}.default;
+            name = "haswaynav";
           };
 
           devShells.default = with pkgs; mkShell {
